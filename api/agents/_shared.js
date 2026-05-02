@@ -1,8 +1,8 @@
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 
-export const MODEL = "claude-sonnet-4-5";
+const MODEL = "claude-sonnet-4-5";
 
-export const CORS_HEADERS = {
+const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
@@ -77,13 +77,6 @@ async function callClaude(systemPrompt, userMessage, maxTokens = 1000) {
 
   return text;
 }
-
-module.exports = {
-  MODEL,
-  CORS_HEADERS,
-  safeJsonParse,
-  callClaude,
-};
 
 export {
   MODEL,

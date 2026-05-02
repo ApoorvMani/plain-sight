@@ -95,6 +95,14 @@ body {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-sm);
+}
+
+.masthead-meta:has(.masthead-practice-link) {
+  justify-content: flex-end;
+  margin-bottom: var(--space-md);
+}
+
+.masthead-meta:not(:has(.masthead-practice-link)) {
   margin-bottom: var(--space-lg);
 }
 
@@ -115,6 +123,21 @@ body {
   border-top: 1px solid var(--color-accent);
   max-width: 120px;
   margin: 0 auto;
+}
+
+.masthead-practice-link {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--color-accent);
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color var(--transition-fast);
+}
+
+.masthead-practice-link:hover {
+  color: var(--color-accent-subtle);
+  text-decoration: underline;
 }
 
 /* Publication Sections */
