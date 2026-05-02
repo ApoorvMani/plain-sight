@@ -1113,7 +1113,16 @@
         console.error('[RegenerateController] fetch error:', e);
         var slot = document.getElementById('lead-story');
         if (slot) {
-          slot.innerHTML = '<p class="placeholder-text">Something went wrong. Try again?</p>';
+          var hasRendered = !slot.querySelector('.placeholder-text');
+          if (hasRendered) {
+            var notice = document.createElement('p');
+            notice.className = 'placeholder-text';
+            notice.style.marginBottom = 'var(--space-sm)';
+            notice.textContent = 'Network error — partial edition shown.';
+            slot.insertBefore(notice, slot.firstChild);
+          } else {
+            slot.innerHTML = '<p class="placeholder-text">Something went wrong. Try again?</p>';
+          }
         }
         self._onDone();
       });
@@ -1136,8 +1145,17 @@
         case 'error':
           var slot = document.getElementById('lead-story');
           if (slot) {
-            slot.innerHTML = '<p class="placeholder-text">' +
-              escapeHtml(data.message || 'Pipeline error. Try again?') + '</p>';
+            var hasRendered = !slot.querySelector('.placeholder-text');
+            if (hasRendered) {
+              var notice = document.createElement('p');
+              notice.className = 'placeholder-text';
+              notice.style.marginBottom = 'var(--space-sm)';
+              notice.textContent = data.message || 'Pipeline error — partial edition shown.';
+              slot.insertBefore(notice, slot.firstChild);
+            } else {
+              slot.innerHTML = '<p class="placeholder-text">' +
+                escapeHtml(data.message || 'Pipeline error. Try again?') + '</p>';
+            }
           }
           this._onDone();
           break;
