@@ -25,6 +25,26 @@
       <hr class="masthead-rule">
     </header>
 
+    <!-- Regenerate Bar -->
+    <div class="regenerate-bar" id="regenerate-bar">
+      <input type="text" id="topic-input" class="topic-input"
+             placeholder="Special edition topic — leave blank for today's news" />
+      <button id="regenerate-btn" class="regenerate-btn" type="button">Regenerate</button>
+    </div>
+
+    <!-- Agent Ribbon -->
+    <div class="agent-ribbon" id="agent-ribbon" aria-hidden="true">
+      <span class="live-indicator" id="live-indicator">
+        <span class="live-dot"></span>LIVE
+      </span>
+      <span class="agent-label" data-agent="scout">Scout</span>
+      <span class="agent-label" data-agent="editor">Editor</span>
+      <span class="agent-label" data-agent="storyteller">Storyteller</span>
+      <span class="agent-label" data-agent="myth_keeper">Myth-Keeper</span>
+      <span class="agent-label" data-agent="practitioner">Practitioner</span>
+      <span class="agent-label" data-agent="sub_editor">Sub-Editor</span>
+    </div>
+
     <!-- Main Content -->
     <main class="publication">
       <!-- TODO: prompt 2 — lead story renders here -->
