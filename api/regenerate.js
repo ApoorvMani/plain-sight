@@ -78,7 +78,7 @@ async function runPipeline(req, res) {
     scoutResult = await scout({ region });
     sendEvent(res, "agent_complete", {
       agent: "scout",
-      summary: `Found ${scoutResult.total_candidates} candidates (${scoutResult.source_status.action_fraud} / ${scoutResult.source_status.ncsc})`,
+      summary: `Found ${scoutResult.total_candidates} candidates. Sources: AF=${scoutResult.source_status.action_fraud}, NCSC=${scoutResult.source_status.ncsc}, NewsAPI=${scoutResult.source_status.newsapi}`,
       output: scoutResult,
     });
 
@@ -89,8 +89,10 @@ async function runPipeline(req, res) {
     currentAgent = "editor";
     sendEvent(res, "agent_start", { agent: "editor", message: "Choosing today's stories..." });
 
-    const allCandidates = [...(scoutResult.live || []), ...(scoutResult.fallback || [])];
-    editorChoice = await editor(allCandidates);
+    const candidatesForEditor = scoutResult.live.length >= 4
+      ? scoutResult.live
+      : scoutResult.live.concat(scoutResult.fallback).slice(0, 8);
+    editorChoice = await editor(candidatesForEditor);
     sendEvent(res, "agent_complete", {
       agent: "editor",
       summary: editorChoice.editorial_note,

@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 
 const ACTION_FRAUD_RSS = "https://www.actionfraud.police.uk/news.xml";
 const NCSC_RSS = "https://www.ncsc.gov.uk/api/1/services/v1/all-rss-feed.xml";
+const NEWSAPI_ENDPOINT = "https://newsapi.org/v2/everything";
 const FALLBACK_PATH = path.join(__dirname, "..", "..", "data", "fallback-threats.json");
 
 async function fetchWithTimeout(url, timeoutMs = 5000) {
@@ -97,6 +98,82 @@ function parseNcscRss(xmlText) {
   return items;
 }
 
+async function fetchNewsApi(timeoutMs = 5000) {
+  const apiKey = process.env.NEWSAPI_KEY;
+  if (!apiKey) {
+    return { items: [], status: "no_key" };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const fromDate = sevenDaysAgo.toISOString().split("T")[0];
+
+  const params = new URLSearchParams({
+    apiKey,
+    q: '(scam OR phishing OR fraud OR "data breach") AND (UK OR Britain OR "United Kingdom")',
+    language: "en",
+    sortBy: "publishedAt",
+    pageSize: "10",
+    from: fromDate,
+  });
+
+  try {
+    const response = await fetch(`${NEWSAPI_ENDPOINT}?${params}`, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "PlainSight-Hackathon/1.0",
+      },
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.warn(`NewsAPI returned status ${response.status}`);
+      return { items: [], status: response.status === 401 || response.status === 429 ? "failed" : "failed" };
+    }
+
+    const data = await response.json();
+    if (!data.articles || !Array.isArray(data.articles) || data.articles.length === 0) {
+      return { items: [], status: "ok" };
+    }
+
+    const items = data.articles
+      .filter((article) => article.title && (article.description || article.content))
+      .slice(0, 5)
+      .map((article, idx) => ({
+        id: `newsapi_${idx}_${Date.now()}`,
+        raw_headline: article.title,
+        raw_summary: article.description || article.content || "",
+        category: "other",
+        uk_context: article.source.name + " — " + (article.url || ""),
+        severity: "MEDIUM",
+        freshness: "breaking",
+        source_url: article.url,
+        source_name: article.source.name,
+        published_at: article.publishedAt,
+      }));
+
+    return { items, status: "ok" };
+  } catch (e) {
+    clearTimeout(timeout);
+    console.warn("NewsAPI fetch failed:", e.message);
+    return { items: [], status: "failed" };
+  }
+}
+
+function dedupeByTitle(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const titleLower = (item.raw_headline || "").toLowerCase();
+    if (seen.has(titleLower)) return false;
+    seen.add(titleLower);
+    return true;
+  });
+}
+
 function loadFallbackThreats() {
   try {
     const data = fs.readFileSync(FALLBACK_PATH, "utf8");
@@ -146,8 +223,10 @@ function selectWeightedFallbacks(allThreats, count = 8) {
 export async function scout({ region = "United Kingdom" }) {
   let actionFraudItems = [];
   let ncscItems = [];
+  let newsapiItems = [];
   let actionFraudStatus = "failed";
   let ncscStatus = "failed";
+  let newsapiStatus = "no_key";
 
   try {
     const afResponse = await fetchWithTimeout(ACTION_FRAUD_RSS, 5000);
@@ -171,10 +250,20 @@ export async function scout({ region = "United Kingdom" }) {
     console.warn("NCSC fetch failed:", e.message);
   }
 
+  try {
+    const newsapiResult = await fetchNewsApi(5000);
+    newsapiItems = newsapiResult.items;
+    newsapiStatus = newsapiResult.status;
+  } catch (e) {
+    console.warn("NewsAPI fetch failed:", e.message);
+    newsapiStatus = "failed";
+  }
+
   const allFallbacks = loadFallbackThreats();
   const selectedFallbacks = selectWeightedFallbacks(allFallbacks, 8);
 
-  const live = [...actionFraudItems, ...ncscItems].slice(0, 10);
+  const combinedLive = [...actionFraudItems, ...ncscItems, ...newsapiItems];
+  const live = dedupeByTitle(combinedLive).slice(0, 10);
   const fallback = selectedFallbacks;
 
   return {
@@ -184,6 +273,7 @@ export async function scout({ region = "United Kingdom" }) {
     source_status: {
       action_fraud: actionFraudStatus,
       ncsc: ncscStatus,
+      newsapi: newsapiStatus,
     },
   };
 }
