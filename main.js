@@ -10,6 +10,7 @@
      CONFIGURATION
      ============================================ */
   const PROXY_URL = "https://plain-sight.vercel.app/api/claude";
+  const API_BASE = "https://plain-sight.vercel.app/api";
 
   /* ============================================
      SYSTEM PROMPTS
@@ -26,6 +27,11 @@
   const STORAGE_KEY_READER = 'plainsight_reader_v1';
 
   /* ============================================
+     TOOL USAGE TRACKING
+     ============================================ */
+  var recentToolUses = [];
+
+  /* ============================================
      EDITION DATA
      ============================================ */
   var editionData = null;
@@ -35,14 +41,14 @@
      ============================================ */
   var deskContext = {
     currentStory: null,
-    mode: 'general', // 'discuss', 'research', 'personalise'
+    mode: 'general',
     conversation: []
   };
 
   /* ============================================
      READER PROFILE MODULE
      ============================================ */
-  const readerProfile = {
+  var readerProfile = {
     get: function() {
       try {
         var stored = localStorage.getItem(STORAGE_KEY_READER);
@@ -59,7 +65,6 @@
       try {
         var current = this.get();
         var updated = Object.assign({}, current, partial);
-        // Handle arrays (merge, not replace)
         if (partial.concerns && partial.concerns.length) {
           updated.concerns = (current.concerns || []).concat(partial.concerns);
         }
@@ -89,6 +94,272 @@
         caring_for: null,
         language_preference: 'en'
       };
+    }
+  };
+
+  /* ============================================
+     TOOL USAGE TRACKING
+     ============================================ */
+  function trackToolUse(toolType, result) {
+    recentToolUses.push({
+      tool: toolType,
+      result: result,
+      timestamp: Date.now()
+    });
+
+    if (recentToolUses.length > 3) {
+      recentToolUses = recentToolUses.slice(-3);
+    }
+  }
+
+  function getToolContextNote() {
+    if (recentToolUses.length === 0) return null;
+
+    var notes = [];
+    recentToolUses.forEach(function(use) {
+      if (use.tool === 'hibp') {
+        notes.push('checked an email against breach records');
+      } else if (use.tool === 'url-check') {
+        notes.push('had a URL analysed');
+      } else if (use.tool === 'scam-decoder') {
+        notes.push('had a message decoded');
+      }
+    });
+
+    if (notes.length > 0) {
+      return 'In this session, you ' + notes.join(', ') + '.';
+    }
+    return null;
+  }
+
+  /* ============================================
+     EMBEDDED TOOLS MODULE
+     ============================================ */
+  var embeddedTools = {
+    HibpWidget: {
+      render: function(container, promptText) {
+        if (!container) return;
+
+        var widget = document.createElement('div');
+        widget.className = 'embedded-tool-widget embedded-tool-hibp';
+        widget.innerHTML =
+          '<p class="embedded-tool-label">CHECK NOW</p>' +
+          '<p class="embedded-tool-prompt">' + escapeHtml(promptText) + '</p>' +
+          '<div class="embedded-tool-form">' +
+            '<input type="email" class="embedded-tool-input" placeholder="your@email.com" />' +
+            '<a href="#" class="embedded-tool-submit">Check →</a>' +
+          '</div>' +
+          '<div class="embedded-tool-result" style="display:none;"></div>';
+
+        container.appendChild(widget);
+
+        var input = widget.querySelector('.embedded-tool-input');
+        var submit = widget.querySelector('.embedded-tool-submit');
+        var result = widget.querySelector('.embedded-tool-result');
+
+        submit.addEventListener('click', function(e) {
+          e.preventDefault();
+          var email = input.value.trim();
+          if (!email || !email.includes('@')) {
+            result.innerHTML = '<p class="tool-error">Please enter a valid email.</p>';
+            result.style.display = 'block';
+            return;
+          }
+
+          result.innerHTML = '<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span>';
+          result.style.display = 'block';
+
+          fetch(API_BASE + '/hibp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email })
+          })
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            if (data.error) {
+              result.innerHTML = '<p class="tool-error">' + escapeHtml(data.error) + '</p>';
+              return;
+            }
+
+            var isDemo = data.demo;
+            var breaches = data.breaches || [];
+            var count = breaches.length;
+            var html = '';
+
+            if (isDemo) {
+              html += '<span class="tool-demo-badge">[demo data]</span>';
+            }
+
+            if (data.breached && count > 0) {
+              html += '<p>Your email appears in ' + count + ' known breach' + (count > 1 ? 'es' : '') + '.</p>';
+              if (breaches[0]) {
+                html += '<p>Here\'s what was exposed: ' + escapeHtml(breaches[0].exposed_data.join(', ')) + '</p>';
+              }
+              html += '<p class="tool-note">That\'s a good baseline to start from. Keep an eye on the basics — different passwords for different accounts, and a password manager helps.</p>';
+            } else {
+              html += '<p>No known breaches. That\'s a good baseline, not a guarantee.</p>';
+            }
+
+            result.innerHTML = html;
+
+            trackToolUse('hibp', count);
+          })
+          .catch(function(e) {
+            console.error('HIBP error:', e);
+            result.innerHTML = '<p class="tool-error">Something went wrong. Try again?</p>';
+          });
+        });
+      }
+    },
+
+    UrlCheckWidget: {
+      render: function(container, promptText) {
+        if (!container) return;
+
+        var widget = document.createElement('div');
+        widget.className = 'embedded-tool-widget embedded-tool-url';
+        widget.innerHTML =
+          '<p class="embedded-tool-label">ANALYSE THIS</p>' +
+          '<p class="embedded-tool-prompt">' + escapeHtml(promptText) + '</p>' +
+          '<div class="embedded-tool-form">' +
+            '<input type="url" class="embedded-tool-input" placeholder="https://example.com" />' +
+            '<a href="#" class="embedded-tool-submit">Analyse →</a>' +
+          '</div>' +
+          '<div class="embedded-tool-result" style="display:none;"></div>';
+
+        container.appendChild(widget);
+
+        var input = widget.querySelector('.embedded-tool-input');
+        var submit = widget.querySelector('.embedded-tool-submit');
+        var result = widget.querySelector('.embedded-tool-result');
+
+        submit.addEventListener('click', function(e) {
+          e.preventDefault();
+          var urlValue = input.value.trim();
+          if (!urlValue) {
+            result.innerHTML = '<p class="tool-error">Please enter a URL.</p>';
+            result.style.display = 'block';
+            return;
+          }
+
+          result.innerHTML = '<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span>';
+          result.style.display = 'block';
+
+          fetch(API_BASE + '/url-check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: urlValue })
+          })
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            if (data.error) {
+              result.innerHTML = '<p class="tool-error">' + escapeHtml(data.error) + '</p>';
+              return;
+            }
+
+            var html = '';
+            var verdicts = {
+              'likely_safe': 'This one looks OK.',
+              'suspicious': 'This one has some red flags.',
+              'likely_phishing': 'This looks like a scam.'
+            };
+
+            html += '<p class="tool-verdict">' + (verdicts[data.verdict] || data.verdict) + '</p>';
+            html += '<p class="tool-reasons">' + escapeHtml(data.reasons.join('. ')) + '.</p>';
+            html += '<p class="tool-explanation">' + escapeHtml(data.plain_explanation) + '</p>';
+            html += '<p class="tool-note">Analysed using known phishing patterns. Always cross-check with the official Action Fraud reporting site for confirmed scams.</p>';
+
+            result.innerHTML = html;
+
+            trackToolUse('url-check', data.verdict);
+          })
+          .catch(function(e) {
+            console.error('URL check error:', e);
+            result.innerHTML = '<p class="tool-error">Something went wrong. Try again?</p>';
+          });
+        });
+      }
+    },
+
+    ScamDecoderWidget: {
+      render: function(container, promptText) {
+        if (!container) return;
+
+        var widget = document.createElement('div');
+        widget.className = 'embedded-tool-widget embedded-tool-scam';
+        widget.innerHTML =
+          '<p class="embedded-tool-label">DECODE THIS</p>' +
+          '<p class="embedded-tool-prompt">' + escapeHtml(promptText) + '</p>' +
+          '<div class="embedded-tool-form">' +
+            '<textarea class="embedded-tool-textarea" rows="4" placeholder="Paste the suspicious message here..."></textarea>' +
+            '<a href="#" class="embedded-tool-submit">Decode →</a>' +
+          '</div>' +
+          '<div class="embedded-tool-result" style="display:none;"></div>';
+
+        container.appendChild(widget);
+
+        var textarea = widget.querySelector('.embedded-tool-textarea');
+        var submit = widget.querySelector('.embedded-tool-submit');
+        var result = widget.querySelector('.embedded-tool-result');
+
+        submit.addEventListener('click', function(e) {
+          e.preventDefault();
+          var message = textarea.value.trim();
+          if (!message || message.length < 10) {
+            result.innerHTML = '<p class="tool-error">Please paste a longer message.</p>';
+            result.style.display = 'block';
+            return;
+          }
+
+          result.innerHTML = '<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span>';
+          result.style.display = 'block';
+
+          fetch(API_BASE + '/scam-decoder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message })
+          })
+          .then(function(response) { return response.json(); })
+          .then(function(data) {
+            if (data.error) {
+              result.innerHTML = '<p class="tool-error">' + escapeHtml(data.error) + '</p>';
+              return;
+            }
+
+            var html = '';
+            var verdicts = {
+              'likely_scam': 'Likely scam',
+              'probably_legit': 'Probably legitimate',
+              'unclear': 'Can\'t tell'
+            };
+            var tactics = {
+              'urgency': 'Pressure to act fast',
+              'authority': 'Pretending to be an official organisation',
+              'fear': 'Trying to frighten you',
+              'greed': 'Promise of money or reward',
+              'curiosity': 'Tempting you to click something',
+              'none': 'No clear tactic detected'
+            };
+
+            html += '<p class="tool-verdict">' + (verdicts[data.verdict] || data.verdict) + '</p>';
+            if (data.tactic && data.tactic !== 'none') {
+              html += '<p class="tool-tactic">Tactic: ' + (tactics[data.tactic] || data.tactic) + '</p>';
+            }
+            html += '<p class="tool-explanation">' + escapeHtml(data.plain_explanation) + '</p>';
+            if (data.what_to_do) {
+              html += '<p class="tool-action">' + escapeHtml(data.what_to_do) + '</p>';
+            }
+
+            result.innerHTML = html;
+
+            trackToolUse('scam-decoder', data.verdict);
+          })
+          .catch(function(e) {
+            console.error('Scam decoder error:', e);
+            result.innerHTML = '<p class="tool-error">Something went wrong. Try again?</p>';
+          });
+        });
+      }
     }
   };
 
@@ -188,7 +459,7 @@
       if (!input) return;
       input.style.height = 'auto';
       var scrollHeight = input.scrollHeight;
-      input.style.height = Math.min(scrollHeight, 120) + 'px'; // Max ~4 lines
+      input.style.height = Math.min(scrollHeight, 120) + 'px';
     },
 
     setDeskContext: function(story, contextType) {
@@ -198,7 +469,11 @@
 
       this._clearConversation();
 
-      // Show story context note
+      var toolNote = getToolContextNote();
+      if (toolNote) {
+        this._addSystemNote(toolNote);
+      }
+
       this._addSystemNote('You\'re discussing: ' + (story ? story.headline : 'this story'));
 
       this.open(contextType);
@@ -210,7 +485,6 @@
       var self = this;
       this.isOpen = true;
 
-      // Set mode if passed
       if (mode === 'discuss-lead' || mode === 'discuss') {
         deskContext.mode = 'discuss';
       } else if (mode === 'research') {
@@ -219,7 +493,6 @@
         deskContext.mode = 'personalise';
       }
 
-      // Show context label
       if (this.panels.contextLabel) {
         if (deskContext.currentStory && deskContext.mode === 'discuss') {
           this.panels.contextLabel.textContent = 'Discussing: ' + deskContext.currentStory.headline;
@@ -232,7 +505,6 @@
         }
       }
 
-      // Update input placeholder based on mode
       if (this.panels.input) {
         if (deskContext.mode === 'research') {
           this.panels.input.placeholder = 'What would you like to understand?';
@@ -243,7 +515,6 @@
         }
       }
 
-      // Show empty state if first open
       if (deskContext.conversation.length === 0) {
         this._showEmptyState();
       }
@@ -289,7 +560,6 @@
     _addUserMessage: function(text) {
       if (!this.panels.conversation) return;
 
-      // Remove empty state if present
       var emptyState = this.panels.conversation.querySelector('.editor-empty-state');
       if (emptyState) emptyState.remove();
 
@@ -298,10 +568,8 @@
       msg.textContent = text;
       this.panels.conversation.appendChild(msg);
 
-      // Add separator
       this._addSeparator();
 
-      // Scroll to bottom
       this.panels.conversation.scrollTop = this.panels.conversation.scrollHeight;
     },
 
@@ -335,7 +603,6 @@
     _showError: function(message) {
       if (!this.panels.conversation) return;
 
-      // Remove typing indicator if present
       var typing = this.panels.conversation.querySelector('.typing-indicator');
       if (typing) typing.parentElement.remove();
 
@@ -348,7 +615,6 @@
     },
 
     _handleQuickStart: function(type) {
-      // Check if conversation has messages and mode is changing
       if (deskContext.conversation.length > 0 && !confirm('Start a new conversation? This will clear what we\'ve discussed.')) {
         return;
       }
@@ -386,22 +652,17 @@
     _sendMessage: function(message) {
       var self = this;
 
-      // Add user message to UI
       this._addUserMessage(message);
 
-      // Add to conversation history
       deskContext.conversation.push({ role: 'user', content: message });
 
-      // Disable input
       this.isStreaming = true;
       if (this.panels.input) {
         this.panels.input.disabled = true;
       }
 
-      // Create assistant bubble
       var bubble = this._addAssistantBubble();
 
-      // Build request
       var systemPrompt = this._getSystemPrompt();
       var messages = deskContext.conversation.map(function(m) {
         return { role: m.role, content: m.content };
@@ -423,7 +684,6 @@
         return response.text();
       })
       .then(function(text) {
-        // Parse SSE
         var assistantText = '';
         var lines = text.split('\n');
         for (var i = 0; i < lines.length; i++) {
@@ -440,7 +700,6 @@
           }
         }
 
-        // Handle personalise mode: extract profile updates
         if (deskContext.mode === 'personalise') {
           var extracted = self._extractProfileUpdates(assistantText);
           if (extracted.length > 0) {
@@ -448,7 +707,6 @@
               readerProfile.update(update);
             });
           }
-          // Strip tags from display
           assistantText = assistantText.replace(/<<PROFILE_UPDATE>>.*?<<END>>/g, '').trim();
           if (assistantText === '') {
             assistantText = '...';
@@ -502,9 +760,6 @@
     }
   };
 
-  /**
-   * Public: Set the Editor's Desk context for a story
-   */
   function setDeskContext(storyHeadline, storyType) {
     var story = null;
     if (storyType === 'discuss-lead') {
@@ -634,6 +889,10 @@
         html += '</div>';
       }
 
+      if (story.embedded_tool) {
+        html += '<div class="embedded-tool-container" data-tool-type="' + story.embedded_tool.type + '" data-placement="' + story.embedded_tool.placement + '" data-prompt="' + escapeHtml(story.embedded_tool.prompt_text) + '"></div>';
+      }
+
       html += '<p class="story-meta"><a href="#" class="editor-link" data-action="secondary-' + index + '">Ask the editor about this story →</a></p>';
 
       html += '</article>';
@@ -647,6 +906,18 @@
         var action = link.getAttribute('data-action');
         setDeskContext(null, action);
       });
+    });
+
+    container.querySelectorAll('.embedded-tool-container').forEach(function(el) {
+      var toolType = el.getAttribute('data-tool-type');
+      var promptText = el.getAttribute('data-prompt');
+      if (toolType === 'hibp') {
+        embeddedTools.HibpWidget.render(el, promptText);
+      } else if (toolType === 'url_check') {
+        embeddedTools.UrlCheckWidget.render(el, promptText);
+      } else if (toolType === 'scam_decoder') {
+        embeddedTools.ScamDecoderWidget.render(el, promptText);
+      }
     });
   }
 
@@ -677,7 +948,23 @@
       html += '</div>';
     }
 
+    if (myth.embedded_tool) {
+      html += '<div class="embedded-tool-container" data-tool-type="' + myth.embedded_tool.type + '" data-placement="' + myth.embedded_tool.placement + '" data-prompt="' + escapeHtml(myth.embedded_tool.prompt_text) + '"></div>';
+    }
+
     container.innerHTML = html;
+
+    container.querySelectorAll('.embedded-tool-container').forEach(function(el) {
+      var toolType = el.getAttribute('data-tool-type');
+      var promptText = el.getAttribute('data-prompt');
+      if (toolType === 'hibp') {
+        embeddedTools.HibpWidget.render(el, promptText);
+      } else if (toolType === 'url_check') {
+        embeddedTools.UrlCheckWidget.render(el, promptText);
+      } else if (toolType === 'scam_decoder') {
+        embeddedTools.ScamDecoderWidget.render(el, promptText);
+      }
+    });
   }
 
   function renderWeeklyPractice(practice) {
@@ -762,7 +1049,7 @@
       var confirmed = confirm('This will clear everything we\'ve discussed and any preferences you\'ve shared. Continue?');
       if (confirmed) {
         readerProfile.clear();
-        deskContext.conversation = []; // Clear in-memory conversation
+        deskContext.conversation = [];
         alert('Your data has been cleared. Reload for a fresh edition.');
       }
     });

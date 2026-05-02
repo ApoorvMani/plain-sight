@@ -1,0 +1,74 @@
+[
+  {
+    "id": "myth-01",
+    "myth": "Incognito mode makes you invisible online",
+    "verdict": "FALSE",
+    "explanation_seed": "Incognito mode only prevents your browser from saving your history, cookies, and form data on YOUR device. It does not hide your activity from your internet provider, the websites you visit, or any trackers embedded in those sites. Your IP address is still visible, and your employer or school can still see what you're doing if they're monitoring the network."
+  },
+  {
+    "id": "myth-02",
+    "myth": "Macs don't get viruses",
+    "verdict": "FALSE",
+    "explanation_seed": "Macs are far less targeted than Windows computers, but they absolutely get malware. The number of threats targeting macOS has grown significantly. In 2025, malware designed for Macs increased by over 200%. The belief that Macs are immune is dangerous because it makes Mac users less cautious about what they download and click."
+  },
+  {
+    "id": "myth-03",
+    "myth": "I'd know immediately if my accounts were hacked",
+    "verdict": "FALSE",
+    "explanation_seed": "The opposite is closer to the truth. The most damaging breaches are the ones you don't notice — credentials quietly resold, accounts watched without being touched, identity details stitched together over months from sources you've forgotten about. Modern attackers want to stay hidden so they can keep accessing your accounts for as long as possible."
+  },
+  {
+    "id": "myth-04",
+    "myth": "A strong password — lots of symbols and numbers — is all you need",
+    "verdict": "PARTLY TRUE",
+    "explanation_seed": "Strong passwords matter, but length matters more than complexity. A four-word phrase like 'red tractor running fast' is harder for computers to crack than 'P@ssw0rd!' because length defeats brute-force attacks even when the words are simple. The best passwords are long and easy for you to remember."
+  },
+  {
+    "id": "myth-05",
+    "myth": "Public WiFi is dangerous and you should never use it",
+    "verdict": "PARTLY TRUE",
+    "explanation_seed": "Not all public WiFi is equally dangerous. A password-protected network at a cafe or hotel is reasonably safe. The real danger is unencrypted, open networks where anyone can intercept traffic. Using your mobile data instead of public WiFi when dealing with sensitive information is the easiest habit to build."
+  },
+  {
+    "id": "myth-06",
+    "myth": "Two-factor authentication means your accounts are completely safe",
+    "verdict": "FALSE",
+    "explanation_seed": "2FA dramatically improves security, but it's not impenetrable. SIM-swap attacks can intercept text messages. Phishing pages can capture 2FA codes in real time. Some attackers bypass 2FA entirely through techniques like cookie theft. Use an authenticator app or security key instead of text messages where possible."
+  },
+  {
+    "id": "myth-07",
+    "myth": "I don't have anything worth stealing, so scammers won't target me",
+    "verdict": "FALSE",
+    "explanation_seed": "Scammers don't just want valuable possessions — they want your identity, your email address, and your access to other people's money. Even an empty bank account is useful for money laundering. Everyone is a target because everyone's data has value to someone."
+  },
+  {
+    "id": "myth-08",
+    "myth": "Phishing only happens through email",
+    "verdict": "FALSE",
+    "explanation_seed": "Only about a third of phishing now happens through email. The rest is spread across text messages (smishing), social media, messaging apps, phone calls (vishing), and even fake websites. The term 'phishing' covers all of these impersonation attacks."
+  },
+  {
+    "id": "myth-09",
+    "myth": "Antivirus software is enough to keep you safe",
+    "verdict": "OUTDATED",
+    "explanation_seed": "Antivirus catches known malware, but modern attacks often use brand-new code that hasn't been identified yet. Many infections start with a user making a mistake — clicking a link, downloading a file — before any software can help. The best protection is your own judgment, not software."
+  },
+  {
+    "id": "myth-10",
+    "myth": "When you delete something online, it's gone forever",
+    "verdict": "FALSE",
+    "explanation_seed": "Deleting something from a website or app rarely removes it from backups, screenshots other users took, or the company's servers. Data that seems deleted often lives for months or years in backups or archives. Assume everything you post online is permanent."
+  },
+  {
+    "id": "myth-11",
+    "myth": "A VPN makes you completely anonymous online",
+    "verdict": "FALSE",
+    "explanation_seed": "VPNs encrypt your traffic and hide your IP address from the websites you visit, but they don't make you anonymous. The VPN company itself can see everything you do, and many VPNs keep logs. For truly private browsing, use the Tor browser instead. For most people, a VPN is useful but not magical."
+  },
+  {
+    "id": "myth-12",
+    "myth": "Your fingerprint or face is more secure than a password",
+    "verdict": "PARTLY TRUE",
+    "explanation_seed": "Biometrics are convenient — you can't forget your fingerprint the way you might forget a password. But they can't be changed if they're compromised. Unlike a password, you can't issue a new fingerprint if someone steals it. Biometrics are best used alongside a strong password, not as a replacement."
+  }
+]

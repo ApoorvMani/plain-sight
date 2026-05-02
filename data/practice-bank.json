@@ -1,0 +1,50 @@
+[
+  {
+    "id": "prac-01",
+    "title": "How to spot a fake delivery text",
+    "core_lesson": "Real couriers never ask for payment via text message. If a text mentions money, it's always a scam.",
+    "context_seed": "A delivery text is the most common scam in the UK because nearly everyone is expecting a parcel from someone. The scam works on probability — send a million texts, a few thousand will land at the moment someone is waiting on something. There is exactly one tell that catches almost all of them: real couriers do not ask you to pay a small fee to release a parcel. The link is the trap."
+  },
+  {
+    "id": "prac-02",
+    "title": "How to agree a family code word",
+    "core_lesson": "Pick one nonsense word that any caller claiming to be a relative in trouble must say first. If they can't say it, hang up.",
+    "context_seed": "Voice cloning scams sound exactly like family members. But they can't guess a word you've never shared publicly. The attack works because urgency overrides judgment — the voice is right, the story is plausible, the pressure is immediate. By the time the real family member is called to check, the money is gone. A code word stops this dead."
+  },
+  {
+    "id": "prac-03",
+    "title": "How to check a URL before clicking",
+    "core_lesson": "Hover over or long-press a link to see the real address. If it looks nothing like the company it claims from, don't click.",
+    "context_seed": "Fake URLs are designed to look real at a glance. They use the real company name with minor spellings — amaz0n.com instead of amazon.com, or royalmaill.co.uk instead of royalmail.com. A moment hovering over the link reveals the truth. On mobile, long-press the link instead of tapping it."
+  },
+  {
+    "id": "prac-04",
+    "title": "What to do after a data breach",
+    "core_lesson": "Change the password on the affected account immediately, then change it wherever else you used the same password.",
+    "context_seed": "Data breaches expose your email and password. Criminals try these same credentials on dozens of other sites — banks, social media, shopping — in a technique called credential stuffing. If you've reused the password, they get in. Changing it everywhere stops the chain. Use a password manager to avoid reuse."
+  },
+  {
+    "id": "prac-05",
+    "title": "How to set up 2FA on the accounts that matter",
+    "core_lesson": "Enable two-factor authentication on your most important accounts using an authenticator app, not text messages.",
+    "context_seed": "Text message 2FA can be intercepted through SIM-swap attacks. An authenticator app on your phone generates codes that can't be intercepted this way. Start with your email (which controls everything else), then your bank, then WhatsApp. Most major services now support authenticator apps."
+  },
+  {
+    "id": "prac-06",
+    "title": "How to recognise an HMRC scam email",
+    "core_lesson": "HMRC will never email you about a refund. They write letters. Any refund email is a scam.",
+    "context_seed": "HMRC's official position is clear: they never send emails about tax refunds or rebates. They always send a letter through the post. The scam emails look increasingly real — proper branding, correct tone, realistic links. But the basic rule is absolute. An email about a refund is always fake. Forward suspicious emails to phishing@hmrc.gov.uk."
+  },
+  {
+    "id": "prac-07",
+    "title": "Password manager basics",
+    "core_lesson": "A password manager generates and remembers unique passwords for every account. You only need to remember one master password.",
+    "context_seed": "The average person has over 100 accounts. Reusing passwords means one breach exposes everything. A password manager creates a different random password for each site and remembers them all. You type one master password to unlock it. Most browsers and phones have one built in. It's the single biggest security improvement most people can make."
+  },
+  {
+    "id": "prac-08",
+    "title": "What to do if you've already clicked a bad link",
+    "core_lesson": "Don't panic. Disconnect from the internet, change your passwords from a safe device, and check your accounts.",
+    "context_seed": "Clicking a bad link doesn't automatically mean you're compromised. What matters is what you did next. If you entered a password, change it immediately. If you entered card details, call your bank. If you downloaded something, don't run it. Scanning with antivirus is sensible. The key is acting quickly rather than hoping it goes away."
+  }
+]

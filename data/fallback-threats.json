@@ -1,0 +1,191 @@
+[
+  {
+    "id": "vc-2026-01",
+    "raw_headline": "Grandmother receives call from 'grandson' asking for £5,000 — voice sounds exactly like him",
+    "raw_summary": "AI voice cloning scams are targeting elderly UK residents. Scammers use 30 seconds of voice from social media to generate convincing calls pretending to be family members in distress. Action Fraud reports a 340% increase in voice clone fraud since January.",
+    "category": "voice_clone",
+    "uk_context": "Targets elderly across the UK, particularly those with grandchildren on social media. Uses UK-specific emergency scenarios (arrests, car accidents). Action Fraud and Trading Standards are issuing warnings.",
+    "severity": "HIGH",
+    "freshness": "breaking"
+  },
+  {
+    "id": "vc-2026-02",
+    "raw_headline": "WhatsApp video calls now being deepfaked in real-time",
+    "raw_summary": "Criminals are using live deepfake video in WhatsApp calls to impersonate family members and executives. The technology now works in real-time, not just pre-recorded messages. Victims in Manchester and Birmingham have lost £15,000+ each.",
+    "category": "voice_clone",
+    "uk_context": "UK WhatsApp users are primary targets. Uses UK business contexts and family emergencies. Metropolitan Police and Action Fraud tracking.",
+    "severity": "HIGH",
+    "freshness": "weekly"
+  },
+  {
+    "id": "sm-2026-01",
+    "raw_headline": "Royal Mail SMS includes your actual partial postcode to trick you",
+    "raw_summary": "Smishing texts now include real partial postcodes harvested from data breaches. The personal detail makes the message feel legitimate. The link leads to a fake payment page collecting card details.",
+    "category": "smishing",
+    "uk_context": "Targets UK parcel recipients. Uses Royal Mail and DPD branding. Ofcom reports parcel smishing up 500% in 2025.",
+    "severity": "HIGH",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "sm-2026-02",
+    "raw_headline": "HMRC text claims you have a tax refund waiting — it's a scam",
+    "raw_summary": "Fake HMRC texts claiming tax refunds are circulating. The link leads to a realistic clone of the HMRC website. Over 8,000 reports to Action Fraud in the last quarter.",
+    "category": "smishing",
+    "uk_context": "HMRC explicitly never texts about refunds. This targets UK taxpayers expecting bills or refunds. HMRC has issued multiple warnings.",
+    "severity": "MEDIUM",
+    "freshness": "weekly"
+  },
+  {
+    "id": "sm-2026-03",
+    "raw_headline": "Energy bill 'refund' text from 'your supplier' demands immediate payment",
+    "raw_summary": "Energy crisis scams are ramping up as Ofgem price caps change. Texts claim you owe a refundable deposit or overpayment. They create urgency before the quarterly price announcement.",
+    "category": "smishing",
+    "uk_context": "Targets UK energy customers across all suppliers. Uses Ofgem-regulated pricing context. British Gas, EDF, E.ON customers affected.",
+    "severity": "MEDIUM",
+    "freshness": "weekly"
+  },
+  {
+    "id": "sm-2026-04",
+    "raw_headline": "NHS appointment reminder asks you to confirm details via text link",
+    "raw_summary": "Fake NHS appointment texts are circulating, asking recipients to confirm their details. The NHS does not send unsolicited texts asking for personal information.",
+    "category": "smishing",
+    "uk_context": "Targets UK patients waiting for appointments. Uses NHS England branding. NHS Digital has warned against responding to these texts.",
+    "severity": "MEDIUM",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "ph-2026-01",
+    "raw_headline": "Barclays asks you to verify your account via email — actually scammers",
+    "raw_summary": "Convincing Barclays impersonation emails are bypassing spam filters. They mimic the exact branding and include a fake login portal. UK Finance reports £26 million lost to bank impersonation in six months.",
+    "category": "phishing",
+    "uk_context": "Targets UK banking customers. Uses Barclays, Lloyds, Halifax branding. UK Finance and banks are jointly warning customers.",
+    "severity": "HIGH",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "ph-2026-02",
+    "raw_headline": "CEO email asks you to buy gift cards for a client — it's a scammer",
+    "raw_summary": "Business email compromise is evolving. Scammers research company hierarchies and send requests appearing to come from executives. The request is always for gift cards or urgent wire transfers.",
+    "category": "impersonation",
+    "uk_context": "Targets UK businesses of all sizes. Uses British workplace culture. Cifas reports a 40% increase in executive impersonation scams.",
+    "severity": "HIGH",
+    "freshness": "weekly"
+  },
+  {
+    "id": "ph-2026-03",
+    "raw_headline": "Amazon Prime renewal email threatens account suspension",
+    "raw_summary": "Amazon Prime renewal scams are peaking again. Emails threaten to suspend accounts unless immediate payment is made. The links lead to fake Amazon login pages collecting payment details.",
+    "category": "phishing",
+    "uk_context": "Targets UK Amazon customers with Prime subscriptions. Amazon UK has issued specific warnings about these emails.",
+    "severity": "MEDIUM",
+    "freshness": "weekly"
+  },
+  {
+    "id": "db-2026-01",
+    "raw_headline": "Mum's maiden name and childhood pet — the data that powers account takeovers",
+    "raw_summary": "Criminals are combining data from multiple breaches to answer security questions. Mother's maiden name and first pet names from social media are being paired with breach data to take over accounts.",
+    "category": "data_breach",
+    "uk_context": "Affects UK accounts with security questions across banks, email providers, and social media. National Cyber Security Centre has published guidance.",
+    "severity": "MEDIUM",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "sc-2026-01",
+    "raw_headline": "Your bank calls saying your card is compromised — but it's a scam call",
+    "raw_summary": "Automated vishing calls claiming card compromise are rising. The call displays the bank's real number through number spoofing. Victims are told to transfer money to a 'safe account' which is the scammer's account.",
+    "category": "scam_call",
+    "uk_context": "Uses UK bank brands and phone number spoofing. Ofcom and banks are working on stopping number spoofing but it's technically difficult.",
+    "severity": "HIGH",
+    "freshness": "weekly"
+  },
+  {
+    "id": "sc-2026-02",
+    "raw_headline": "Broadband provider 'engineer' arrives unannounced at your door",
+    "raw_summary": "Courier fraud with in-person scammers is increasing. 'Engineers' arrive unannounced claiming to need access to fix an issue. They steal valuables and install remote access software.",
+    "category": "scam_call",
+    "uk_context": "Targets UK broadband customers. Uses BT, Sky, Virgin Media branding. Police forces across the UK have issued warnings.",
+    "severity": "MEDIUM",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "rs-2026-01",
+    "raw_headline": "Online romance turns into a request for money for a 'family emergency'",
+    "raw_summary": "Romance scams are netting victims even from dating apps that verify users. Scammers spend months building trust before asking for money for a 'family emergency' or flight costs.",
+    "category": "romance_scam",
+    "uk_context": "Targets lonely or isolated UK adults. Uses dating apps popular in the UK. Action Fraud reports losses averaging £10,000 per victim.",
+    "severity": "MEDIUM",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "is-2026-01",
+    "raw_headline": "Crypto investment firm promises 10% monthly returns — then vanishes",
+    "raw_summary": "Cryptocurrency investment scams are targeting younger UK adults through Instagram and TikTok. Fake celebrity endorsements and guaranteed return promises are drawing in victims. FCA has warned about over 200 unregulated crypto firms.",
+    "category": "investment_scam",
+    "uk_context": "Targets UK retail investors. Uses FCA-regulated language illegally. FCA and Action Fraud have issued repeated warnings.",
+    "severity": "HIGH",
+    "freshness": "weekly"
+  },
+  {
+    "id": "is-2026-02",
+    "raw_headline": "Pension transfer offer arrives from 'government' — it's a scam",
+    "raw_summary": "Pension liberation scams are circling again. Scammers offer early access to pension funds for a fee. The money vanishes and victims face tax penalties.",
+    "category": "investment_scam",
+    "uk_context": "Targets UK savers over 50. Uses pensions knowledge and tax penalty threats. The FCA has warned specifically about pension scammers.",
+    "severity": "HIGH",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "mal-2026-01",
+    "raw_headline": "Kids download a 'free' Minecraft mod — it installs ransomware",
+    "raw_summary": "Game mods and cheats are being used to deliver ransomware to children. The malware encrypts family photos and demands payment. Many families have paid because they don't have backups.",
+    "category": "malware",
+    "uk_context": "Targets UK children playing popular games. Uses Minecraft, Roblox, Fortnite. NCSC has guidance for parents on gaming safety.",
+    "severity": "MEDIUM",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "mal-2026-02",
+    "raw_headline": "USB stick left in a library car park — don't plug it in",
+    "raw_summary": "Drop attacks are still working. USB drives left in car parks of UK libraries and businesses contain malware that executes when plugged in.",
+    "category": "malware",
+    "uk_context": "Targets curious UK office workers. Uses physical access, not email. Government security services have warned about this classic attack.",
+    "severity": "MEDIUM",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "el-2026-01",
+    "raw_headline": "Scammers target residents of a Hull care home, posing as council",
+    "raw_summary": "Elder-targeted scams are becoming more coordinated. Scammers are targeting specific UK care homes, calling residents posing as Hull City Council or the NHS.",
+    "category": "impersonation",
+    "uk_context": "Targets elderly UK residents, particularly in care settings. Uses UK local government and NHS branding. Social care sector is alert.",
+    "severity": "HIGH",
+    "freshness": "weekly"
+  },
+  {
+    "id": "el-2026-02",
+    "raw_headline": "Door-to-door 'official' wants to check your meters",
+    "raw_summary": "Cold callers impersonating meter readers are targeting elderly UK residents. They gain entry to check 'meters' and then steal valuables or install covert surveillance.",
+    "category": "impersonation",
+    "uk_context": "Targets elderly UK homeowners. Uses energy supplier and council branding. Trading Standards is tracking these reports.",
+    "severity": "MEDIUM",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "wp-2026-01",
+    "raw_headline": "Email from 'LinkedIn' says your profile is being viewed by recruiters",
+    "raw_summary": "LinkedIn credential harvesting emails are increasingly sophisticated. They mimic the real LinkedIn notification emails and lead to fake login pages. Users of LinkedIn Premium are specifically targeted.",
+    "category": "impersonation",
+    "uk_context": "Targets UK professionals and job seekers. Uses LinkedIn's branding with increasing accuracy. LinkedIn has published guidance on spotting fake emails.",
+    "severity": "MEDIUM",
+    "freshness": "evergreen"
+  },
+  {
+    "id": "ot-2026-01",
+    "raw_headline": "Parcel delivered to your neighbour — but you weren't expecting anything",
+    "raw_summary": "Missed delivery cards are being faked. Card left saying a parcel is with a neighbour, but no one came. The phone number on the card leads to a scammer.",
+    "category": "smishing",
+    "uk_context": "Targets UK householders expecting deliveries. Uses Royal Mail and courier tracking numbers. Universal problem across the UK.",
+    "severity": "LOW",
+    "freshness": "evergreen"
+  }
+]

@@ -25,21 +25,36 @@
       "body": "Royal Mail and DPD impersonation scams have evolved. The latest texts include a real partial postcode for the recipient — bought from breached datasets. The personal detail makes the message feel legitimate. The link still leads to a fake payment page.",
       "what_to_do": "Never click links in delivery texts. Open the courier's app or website yourself.",
       "severity": "MEDIUM",
-      "category": "smishing"
+      "category": "smishing",
+      "embedded_tool": {
+        "type": "url_check",
+        "prompt_text": "Got a parcel text you're not sure about? Paste the link here.",
+        "placement": "after_what_to_do"
+      }
     },
     {
       "headline": "A new HMRC tax refund email is fooling careful people",
       "body": "The latest HMRC scam email gets the branding right, gets the tone right, and asks for nothing on the first click. The first page only asks you to 'verify your details to receive your refund.' The data harvesting starts on page two, after you've already trusted it.",
       "what_to_do": "HMRC will never email you about a refund. They write letters. Any refund email is a scam.",
       "severity": "MEDIUM",
-      "category": "phishing"
+      "category": "phishing",
+      "embedded_tool": {
+        "type": "scam_decoder",
+        "prompt_text": "Received a similar email? Paste it here for a quick read.",
+        "placement": "after_what_to_do"
+      }
     },
     {
       "headline": "Your old LinkedIn data is being weaponised against you at work",
       "body": "Scammers are scraping LinkedIn for job titles and company names, then sending emails to you that look like they come from your boss or a colleague. The grammar is perfect. The signature looks right. The request is small — usually a gift card or a quick favour.",
       "what_to_do": "If a workplace email feels even slightly off, ring the person directly before doing anything.",
       "severity": "MEDIUM",
-      "category": "business_impersonation"
+      "category": "business_impersonation",
+      "embedded_tool": {
+        "type": "hibp",
+        "prompt_text": "Check if your email is in any known breach.",
+        "placement": "after_what_to_do"
+      }
     }
   ],
   "myth": {
@@ -49,7 +64,12 @@
       "The opposite is closer to the truth. The most damaging breaches are the ones you don't notice — credentials quietly resold, accounts watched without being touched, identity details stitched together over months from sources you've forgotten about.",
       "If a hacker wants to use your account, the last thing they want is for you to know. The signs are usually small: a login from an unfamiliar place, a password reset email you didn't ask for, a strange charge for a few pounds. Most people miss them or shrug them off."
     ],
-    "what_to_do": "Check haveibeenpwned.com for your main email address right now. It takes ten seconds and shows you every known breach your email has appeared in."
+    "what_to_do": "Check haveibeenpwned.com for your main email address right now. It takes ten seconds and shows you every known breach your email has appeared in.",
+    "embedded_tool": {
+      "type": "hibp",
+      "prompt_text": "Check yours now — it takes ten seconds.",
+      "placement": "after_what_to_do"
+    }
   },
   "practice": {
     "title": "How to spot a fake delivery text",
