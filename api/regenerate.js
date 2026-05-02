@@ -1,10 +1,10 @@
-import { CORS_HEADERS } from "./agents/_shared.js";
-import { scout } from "./agents/scout.js";
-import { editor } from "./agents/editor.js";
-import { storyteller } from "./agents/storyteller.js";
-import { mythKeeper } from "./agents/myth-keeper.js";
-import { practitioner } from "./agents/practitioner.js";
-import { subEditor } from "./agents/sub-editor.js";
+import { CORS_HEADERS } from "../lib/agents/_shared.js";
+import { scout } from "../lib/agents/scout.js";
+import { editor } from "../lib/agents/editor.js";
+import { storyteller } from "../lib/agents/storyteller.js";
+import { mythKeeper } from "../lib/agents/myth-keeper.js";
+import { practitioner } from "../lib/agents/practitioner.js";
+import { subEditor } from "../lib/agents/sub-editor.js";
 
 export const config = {
   api: {
@@ -57,6 +57,7 @@ function findById(scoutResult, id) {
 
 async function runPipeline(req, res) {
   const region = req.body?.region || "United Kingdom";
+  const topic = req.body?.topic?.trim() || null;
   const timeoutMs = 90000;
   const startTime = Date.now();
 
@@ -65,7 +66,7 @@ async function runPipeline(req, res) {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  sendEvent(res, "pipeline_start", { region, timestamp: startTime });
+  sendEvent(res, "pipeline_start", { region, topic: topic || null, timestamp: startTime });
 
   let currentAgent = "unknown";
   let scoutResult = null;
@@ -106,6 +107,16 @@ async function runPipeline(req, res) {
     const stories = [];
     const chosen = [editorChoice.lead_id, ...(editorChoice.secondary_ids || [])];
 
+    const topicLead = topic ? {
+      id: "topic-lead",
+      raw_headline: topic,
+      raw_summary: `Write a Plain Sight briefing for ordinary UK readers about: ${topic}`,
+      category: "general",
+      severity: "MEDIUM",
+      source_name: null,
+      source_url: null,
+    } : null;
+
     for (let i = 0; i < chosen.length; i++) {
       const isLead = i === 0;
       currentAgent = "storyteller";
@@ -115,7 +126,7 @@ async function runPipeline(req, res) {
         story_index: i,
       });
 
-      const rawStory = findById(scoutResult, chosen[i]);
+      const rawStory = (topicLead && i === 0) ? topicLead : findById(scoutResult, chosen[i]);
       const written = await storyteller({ raw: rawStory, is_lead: isLead });
       stories.push(written);
       sendEvent(res, "agent_progress", {
