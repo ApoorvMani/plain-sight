@@ -58,6 +58,12 @@ function findById(scoutResult, id) {
 async function runPipeline(req, res) {
   const region = req.body?.region || "United Kingdom";
   const topic = req.body?.topic?.trim() || null;
+
+  if (topic && topic.length > 200) {
+    Object.entries(CORS).forEach(([k, v]) => res.setHeader(k, v));
+    return res.status(400).json({ error: "Topic must be 200 characters or less" });
+  }
+
   const timeoutMs = 90000;
   const startTime = Date.now();
 
