@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plain Sight — A Daily Cybersecurity Briefing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="page-wrapper">
+    <!-- Masthead -->
+    <header class="masthead">
+      <h1 class="masthead-title">Plain Sight</h1>
+      <div class="masthead-meta">
+        <time class="masthead-date" id="current-date" datetime=""><!-- TODO: prompt 2 — today's date inserted by JS --></time>
+        <span class="masthead-divider">|</span>
+        <span class="masthead-strapline">A daily cybersecurity briefing for ordinary people.</span>
+      </div>
+      <hr class="masthead-rule">
+    </header>
+
+    <!-- Main Content -->
+    <main class="publication">
+      <!-- TODO: prompt 2 — lead story renders here -->
+      <article id="lead-story" class="lead-story fade-in">
+        <p class="placeholder-text">[Lead story renders here]</p>
+        <!-- Inline "Ask the editor" link for contextual discussion -->
+        <p class="story-meta"><a href="#" class="editor-link" data-action="discuss-lead">Ask the editor about this story →</a></p>
+      </article>
+
+      <!-- TODO: prompt 2 — secondary stories render here -->
+      <section id="secondary-stories" class="secondary-stories fade-in">
+        <p class="placeholder-text">[Secondary stories render here — three cards]</p>
+      </section>
+
+      <!-- TODO: prompt 2 — myth column renders here -->
+      <aside id="myth-column" class="myth-column fade-in">
+        <p class="placeholder-text">[Myth column renders here]</p>
+      </aside>
+
+      <!-- TODO: prompt 2 — weekly practice renders here -->
+      <section id="weekly-practice" class="weekly-practice fade-in">
+        <p class="placeholder-text">[Weekly practice renders here]</p>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="publication-footer">
+      <p>Today's edition written this morning by six AI agents. We don't store your data. We don't have accounts. Reload tomorrow for a new edition. <a href="#" id="forget-me-link" class="forget-link">[Forget me]</a></p>
+    </footer>
+  </div>
+
+  <!-- Editor's Desk: Floating Button -->
+  <button id="editor-desk-trigger" class="editor-trigger" aria-label="Open The Editor's Desk" type="button">
+    Ask the editor
+  </button>
+
+  <!-- Editor's Desk: Side Panel -->
+  <aside id="editor-desk-panel" class="editor-panel" aria-label="The Editor's Desk" role="dialog" aria-modal="true">
+    <header class="editor-panel-header">
+      <div class="editor-panel-title-wrap">
+        <h2 class="editor-panel-title">The Editor's Desk</h2>
+        <!-- TODO: prompt 2 — contextual story title when invoked from inline link -->
+        <p class="editor-panel-context" id="editor-panel-context"></p>
+      </div>
+      <button id="editor-panel-close" class="editor-panel-close" aria-label="Close The Editor's Desk" type="button">&times;</button>
+    </header>
+
+    <div class="editor-panel-subtitle">
+      <p>Ask about today's edition, request research, or tell us about yourself to personalise tomorrow's.</p>
+    </div>
+
+    <div id="editor-conversation" class="editor-conversation">
+      <p class="placeholder-text">[Conversation will appear here]</p>
+    </div>
+
+    <div class="editor-quick-starts">
+      <button type="button" class="quick-start-chip" data-prompt="Discuss today's lead">Discuss today's lead</button>
+      <button type="button" class="quick-start-chip" data-prompt="Research a topic">Research a topic</button>
+      <button type="button" class="quick-start-chip" data-prompt="Personalise my edition">Personalise my edition</button>
+    </div>
+
+    <form id="editor-input-form" class="editor-input-wrap">
+      <input type="text" id="editor-input" class="editor-input" placeholder="What would you like to ask?" autocomplete="off">
+      <button type="submit" class="editor-send" aria-label="Send message">Send</button>
+    </form>
+  </aside>
+
+  <!-- Editor's Desk: Backdrop Overlay -->
+  <div id="editor-backdrop" class="editor-backdrop"></div>
+
+  <script src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,791 @@
+/**
+ * Plain Sight — Main Script
+ * "Granta meets Anthropic" aesthetic
+ */
+
+(function() {
+  'use strict';
+
+  /* ============================================
+     CONFIGURATION
+     ============================================ */
+  const PROXY_URL = "https://plain-sight.vercel.app/api/claude";
+
+  /* ============================================
+     SYSTEM PROMPTS
+     ============================================ */
+  const SYSTEM_PROMPT_DISCUSS = "You are the editor of Plain Sight, a daily cybersecurity briefing for ordinary, non-technical people. A reader is asking you a follow-up question about a specific story in today's edition. The story is: [INJECTED]. Answer in calm, plain English. Never use jargon without immediately explaining it in the same sentence. Keep responses under 120 words unless the reader explicitly asks for more depth. Speak as a knowledgeable friend, not a chatbot. Never start with 'Great question' or any pleasantry. Get to the point. If a question is outside the scope of cybersecurity for ordinary people, gently redirect: 'That's a touch outside what I cover here, but...' If a reader seems anxious, acknowledge it briefly before answering. Never tell them to consult a professional unless the situation is genuinely beyond non-technical guidance. Never produce lists of 5+ items — flowing prose is the house style.";
+
+  const SYSTEM_PROMPT_RESEARCH = "You are the editor of Plain Sight, a daily cybersecurity briefing for ordinary, non-technical people. A reader has come to the desk to research a topic — they want to understand something specific in their own time. Your job is to explain it clearly, in plain English, like you'd explain it to a friend across a kitchen table. Use real-world analogies. Avoid lists of 5+ items. Don't lecture. If the reader's topic is broad, ask them one focused clarifying question before diving in. If they ask about a current threat, ground your answer in well-established mechanics rather than speculating about today's news. Never start with 'Great question' or pleasantries. If they ask something off-topic (general programming, world news, anything not about staying safe online), gently redirect.";
+
+  const SYSTEM_PROMPT_PERSONALISE = "You are the editor of Plain Sight, helping a reader make tomorrow's edition more relevant to them. Your job is to learn — through warm, natural conversation — about (a) which UK region they live in, (b) roughly what age band they're in (only if they volunteer it; never push), (c) which apps and services they use most (banking, WhatsApp, email, etc.), (d) what they're most worried about online, (e) whether they're reading this for themselves or for someone they care for. Ask ONE question at a time. Make it conversational — never feel like a form. After each answer, briefly acknowledge what they've told you and ask the next question naturally. After you have enough — usually 4-6 exchanges — wrap up: thank them, summarise what tomorrow's edition will focus on, and tell them they can close the desk. Never list everything you've stored. Never feel clinical. Never ask all questions at once. The reader's responses can be vague — 'I just want to keep my mum safe' is enough; don't push for specifics they don't volunteer. After each user response, if you've extracted a structured fact (region, age_band, concerns, apps_used, caring_for), output it AT THE START of your response wrapped in a special tag like this exactly: <<PROFILE_UPDATE>>{\"region\": \"North East England\"}<<END>> — then continue the conversation naturally below. The frontend will parse and strip these tags before display. NEVER show these tags to the user in your visible response.";
+
+  /* ============================================
+     DATA STORAGE KEYS
+     ============================================ */
+  const STORAGE_KEY_READER = 'plainsight_reader_v1';
+
+  /* ============================================
+     EDITION DATA
+     ============================================ */
+  var editionData = null;
+
+  /* ============================================
+     DESK CONTEXT
+     ============================================ */
+  var deskContext = {
+    currentStory: null,
+    mode: 'general', // 'discuss', 'research', 'personalise'
+    conversation: []
+  };
+
+  /* ============================================
+     READER PROFILE MODULE
+     ============================================ */
+  const readerProfile = {
+    get: function() {
+      try {
+        var stored = localStorage.getItem(STORAGE_KEY_READER);
+        if (stored) {
+          return JSON.parse(stored);
+        }
+      } catch (e) {
+        console.warn('Failed to read reader profile:', e);
+      }
+      return this._defaultProfile();
+    },
+
+    update: function(partial) {
+      try {
+        var current = this.get();
+        var updated = Object.assign({}, current, partial);
+        // Handle arrays (merge, not replace)
+        if (partial.concerns && partial.concerns.length) {
+          updated.concerns = (current.concerns || []).concat(partial.concerns);
+        }
+        if (partial.apps_used && partial.apps_used.length) {
+          updated.apps_used = (current.apps_used || []).concat(partial.apps_used);
+        }
+        localStorage.setItem(STORAGE_KEY_READER, JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Failed to update reader profile:', e);
+      }
+    },
+
+    clear: function() {
+      try {
+        localStorage.removeItem(STORAGE_KEY_READER);
+      } catch (e) {
+        console.warn('Failed to clear reader profile:', e);
+      }
+    },
+
+    _defaultProfile: function() {
+      return {
+        region: null,
+        age_band: null,
+        concerns: [],
+        apps_used: [],
+        caring_for: null,
+        language_preference: 'en'
+      };
+    }
+  };
+
+  /* ============================================
+     EDITOR'S DESK MODULE
+     ============================================ */
+  var EditorDesk = {
+    panels: {
+      trigger: null,
+      panel: null,
+      backdrop: null,
+      close: null,
+      input: null,
+      inputForm: null,
+      contextLabel: null,
+      conversation: null,
+      quickStarts: null
+    },
+
+    isOpen: false,
+    isStreaming: false,
+
+    init: function() {
+      this.panels.trigger = document.getElementById('editor-desk-trigger');
+      this.panels.panel = document.getElementById('editor-desk-panel');
+      this.panels.backdrop = document.getElementById('editor-backdrop');
+      this.panels.close = document.getElementById('editor-panel-close');
+      this.panels.input = document.getElementById('editor-input');
+      this.panels.inputForm = document.getElementById('editor-input-form');
+      this.panels.contextLabel = document.getElementById('editor-panel-context');
+      this.panels.conversation = document.getElementById('editor-conversation');
+      this.panels.quickStarts = document.querySelector('.editor-quick-starts');
+
+      this._bindEvents();
+    },
+
+    _bindEvents: function() {
+      var self = this;
+
+      if (this.panels.trigger) {
+        this.panels.trigger.addEventListener('click', function(e) {
+          e.preventDefault();
+          self.open('research');
+        });
+      }
+
+      document.querySelectorAll('.editor-link').forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          var context = link.getAttribute('data-action') || 'discuss-lead';
+          var storyIdx = context.indexOf('secondary-') === 0 ? parseInt(context.split('-')[1], 10) : -1;
+          var story = storyIdx >= 0 ? editionData.secondary_stories[storyIdx] : (editionData.lead_story || null);
+          self.setDeskContext(story, context);
+        });
+      });
+
+      if (this.panels.close) {
+        this.panels.close.addEventListener('click', function(e) {
+          e.preventDefault();
+          self.close();
+        });
+      }
+
+      if (this.panels.backdrop) {
+        this.panels.backdrop.addEventListener('click', function(e) {
+          self.close();
+        });
+      }
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && self.isOpen) {
+          self.close();
+        }
+      });
+
+      if (this.panels.input) {
+        this.panels.input.addEventListener('input', function(e) {
+          self._autoGrowInput();
+        });
+
+        this.panels.inputForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          self._handleSubmit();
+        });
+      }
+
+      document.querySelectorAll('.quick-start-chip').forEach(function(chip) {
+        chip.addEventListener('click', function(e) {
+          var prompt = chip.getAttribute('data-prompt');
+          self._handleQuickStart(prompt);
+        });
+      });
+    },
+
+    _autoGrowInput: function() {
+      var input = this.panels.input;
+      if (!input) return;
+      input.style.height = 'auto';
+      var scrollHeight = input.scrollHeight;
+      input.style.height = Math.min(scrollHeight, 120) + 'px'; // Max ~4 lines
+    },
+
+    setDeskContext: function(story, contextType) {
+      deskContext.currentStory = story;
+      deskContext.mode = 'discuss';
+      deskContext.conversation = [];
+
+      this._clearConversation();
+
+      // Show story context note
+      this._addSystemNote('You\'re discussing: ' + (story ? story.headline : 'this story'));
+
+      this.open(contextType);
+    },
+
+    open: function(mode) {
+      if (!this.panels.panel) return;
+
+      var self = this;
+      this.isOpen = true;
+
+      // Set mode if passed
+      if (mode === 'discuss-lead' || mode === 'discuss') {
+        deskContext.mode = 'discuss';
+      } else if (mode === 'research') {
+        deskContext.mode = 'research';
+      } else if (mode === 'personalise') {
+        deskContext.mode = 'personalise';
+      }
+
+      // Show context label
+      if (this.panels.contextLabel) {
+        if (deskContext.currentStory && deskContext.mode === 'discuss') {
+          this.panels.contextLabel.textContent = 'Discussing: ' + deskContext.currentStory.headline;
+          this.panels.contextLabel.style.display = 'block';
+        } else if (deskContext.mode === 'personalise') {
+          this.panels.contextLabel.textContent = 'Personalising your edition';
+          this.panels.contextLabel.style.display = 'block';
+        } else {
+          this.panels.contextLabel.style.display = 'none';
+        }
+      }
+
+      // Update input placeholder based on mode
+      if (this.panels.input) {
+        if (deskContext.mode === 'research') {
+          this.panels.input.placeholder = 'What would you like to understand?';
+        } else if (deskContext.mode === 'personalise') {
+          this.panels.input.placeholder = 'Tell the editor about yourself...';
+        } else {
+          this.panels.input.placeholder = 'What would you like to ask?';
+        }
+      }
+
+      // Show empty state if first open
+      if (deskContext.conversation.length === 0) {
+        this._showEmptyState();
+      }
+
+      this.panels.panel.classList.add('is-open');
+      if (this.panels.backdrop) {
+        this.panels.backdrop.classList.add('is-visible');
+      }
+
+      setTimeout(function() {
+        if (self.panels.input) self.panels.input.focus();
+      }, 300);
+    },
+
+    close: function() {
+      if (!this.panels.panel) return;
+
+      this.isOpen = false;
+      this.panels.panel.classList.remove('is-open');
+      if (this.panels.backdrop) {
+        this.panels.backdrop.classList.remove('is-visible');
+      }
+    },
+
+    _showEmptyState: function() {
+      if (!this.panels.conversation) return;
+      this.panels.conversation.innerHTML = '<p class="editor-empty-state">The editor is at her desk.</p>';
+    },
+
+    _clearConversation: function() {
+      if (!this.panels.conversation) return;
+      this.panels.conversation.innerHTML = '';
+    },
+
+    _addSystemNote: function(text) {
+      if (!this.panels.conversation) return;
+      var note = document.createElement('p');
+      note.className = 'editor-system-note';
+      note.textContent = text;
+      this.panels.conversation.appendChild(note);
+    },
+
+    _addUserMessage: function(text) {
+      if (!this.panels.conversation) return;
+
+      // Remove empty state if present
+      var emptyState = this.panels.conversation.querySelector('.editor-empty-state');
+      if (emptyState) emptyState.remove();
+
+      var msg = document.createElement('div');
+      msg.className = 'editor-message editor-message-user';
+      msg.textContent = text;
+      this.panels.conversation.appendChild(msg);
+
+      // Add separator
+      this._addSeparator();
+
+      // Scroll to bottom
+      this.panels.conversation.scrollTop = this.panels.conversation.scrollHeight;
+    },
+
+    _addAssistantBubble: function() {
+      if (!this.panels.conversation) return;
+
+      var bubble = document.createElement('div');
+      bubble.className = 'editor-message editor-message-assistant';
+      bubble.innerHTML = '<span class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></span>';
+      this.panels.conversation.appendChild(bubble);
+
+      this.panels.conversation.scrollTop = this.panels.conversation.scrollHeight;
+      return bubble;
+    },
+
+    _updateAssistantBubble: function(bubble, text) {
+      if (!bubble) return;
+      bubble.innerHTML = text;
+      if (this.panels.conversation) {
+        this.panels.conversation.scrollTop = this.panels.conversation.scrollHeight;
+      }
+    },
+
+    _addSeparator: function() {
+      if (!this.panels.conversation) return;
+      var sep = document.createElement('hr');
+      sep.className = 'editor-separator';
+      this.panels.conversation.appendChild(sep);
+    },
+
+    _showError: function(message) {
+      if (!this.panels.conversation) return;
+
+      // Remove typing indicator if present
+      var typing = this.panels.conversation.querySelector('.typing-indicator');
+      if (typing) typing.parentElement.remove();
+
+      var err = document.createElement('div');
+      err.className = 'editor-message editor-message-error';
+      err.textContent = message;
+      this.panels.conversation.appendChild(err);
+
+      this.panels.conversation.scrollTop = this.panels.conversation.scrollHeight;
+    },
+
+    _handleQuickStart: function(type) {
+      // Check if conversation has messages and mode is changing
+      if (deskContext.conversation.length > 0 && !confirm('Start a new conversation? This will clear what we\'ve discussed.')) {
+        return;
+      }
+
+      deskContext.conversation = [];
+      this._clearConversation();
+
+      if (type === 'Discuss today\'s lead') {
+        var story = editionData.lead_story || null;
+        this.setDeskContext(story, 'discuss-lead');
+        this._sendMessage('Tell me more about today\'s lead story.');
+      } else if (type === 'Research a topic') {
+        deskContext.mode = 'research';
+        deskContext.currentStory = null;
+        this.open('research');
+      } else if (type === 'Personalise my edition') {
+        deskContext.mode = 'personalise';
+        deskContext.currentStory = null;
+        this.open('personalise');
+        this._sendMessage('Happy to help tailor tomorrow\'s edition. To start — which part of the UK are you in?');
+      }
+    },
+
+    _handleSubmit: function() {
+      var input = this.panels.input;
+      if (!input || !input.value.trim() || this.isStreaming) return;
+
+      var message = input.value.trim();
+      input.value = '';
+      input.style.height = 'auto';
+
+      this._sendMessage(message);
+    },
+
+    _sendMessage: function(message) {
+      var self = this;
+
+      // Add user message to UI
+      this._addUserMessage(message);
+
+      // Add to conversation history
+      deskContext.conversation.push({ role: 'user', content: message });
+
+      // Disable input
+      this.isStreaming = true;
+      if (this.panels.input) {
+        this.panels.input.disabled = true;
+      }
+
+      // Create assistant bubble
+      var bubble = this._addAssistantBubble();
+
+      // Build request
+      var systemPrompt = this._getSystemPrompt();
+      var messages = deskContext.conversation.map(function(m) {
+        return { role: m.role, content: m.content };
+      });
+
+      fetch(PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system: systemPrompt,
+          messages: messages,
+          max_tokens: 1024
+        })
+      })
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error('Editor unavailable');
+        }
+        return response.text();
+      })
+      .then(function(text) {
+        // Parse SSE
+        var assistantText = '';
+        var lines = text.split('\n');
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i];
+          if (line.startsWith('data: ')) {
+            var data = line.slice(6);
+            if (data === '[DONE]') continue;
+            try {
+              var parsed = JSON.parse(data);
+              if (parsed.text) {
+                assistantText += parsed.text;
+              }
+            } catch (e) {}
+          }
+        }
+
+        // Handle personalise mode: extract profile updates
+        if (deskContext.mode === 'personalise') {
+          var extracted = self._extractProfileUpdates(assistantText);
+          if (extracted.length > 0) {
+            extracted.forEach(function(update) {
+              readerProfile.update(update);
+            });
+          }
+          // Strip tags from display
+          assistantText = assistantText.replace(/<<PROFILE_UPDATE>>.*?<<END>>/g, '').trim();
+          if (assistantText === '') {
+            assistantText = '...';
+          }
+        }
+
+        self._updateAssistantBubble(bubble, assistantText);
+        deskContext.conversation.push({ role: 'assistant', content: assistantText });
+      })
+      .catch(function(e) {
+        console.error('Editor error:', e);
+        self._showError('The editor stepped away for a moment. Try again?');
+      })
+      .finally(function() {
+        self.isStreaming = false;
+        if (self.panels.input) {
+          self.panels.input.disabled = false;
+          self.panels.input.focus();
+        }
+      });
+    },
+
+    _getSystemPrompt: function() {
+      if (deskContext.mode === 'discuss' && deskContext.currentStory) {
+        var story = deskContext.currentStory;
+        var storyText = 'Headline: ' + story.headline + '\n';
+        if (story.body && story.body.length) {
+          storyText += 'Body: ' + story.body.join('\n\n') + '\n';
+        }
+        if (story.what_to_do) {
+          storyText += 'What to do: ' + story.what_to_do + '\n';
+        }
+        return SYSTEM_PROMPT_DISCUSS.replace('[INJECTED]', storyText);
+      } else if (deskContext.mode === 'personalise') {
+        return SYSTEM_PROMPT_PERSONALISE;
+      } else {
+        return SYSTEM_PROMPT_RESEARCH;
+      }
+    },
+
+    _extractProfileUpdates: function(text) {
+      var updates = [];
+      var regex = /<<PROFILE_UPDATE>>\s*(\{.*?\})\s*<<END>>/g;
+      var match;
+      while ((match = regex.exec(text)) !== null) {
+        try {
+          updates.push(JSON.parse(match[1]));
+        } catch (e) {}
+      }
+      return updates;
+    }
+  };
+
+  /**
+   * Public: Set the Editor's Desk context for a story
+   */
+  function setDeskContext(storyHeadline, storyType) {
+    var story = null;
+    if (storyType === 'discuss-lead') {
+      story = editionData.lead_story;
+    } else if (storyType && storyType.indexOf('secondary-') === 0) {
+      var idx = parseInt(storyType.split('-')[1], 10);
+      story = editionData.secondary_stories[idx];
+    }
+    EditorDesk.setDeskContext(story, storyType);
+  }
+
+  /* ============================================
+     DATE FORMATTING
+     ============================================ */
+  function formatEditionDate(dateString) {
+    if (!dateString) return null;
+    try {
+      var date = new Date(dateString + 'T12:00:00Z');
+      var options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString('en-GB', options);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function insertEditionDate(dateString) {
+    var dateEl = document.getElementById('current-date');
+    if (!dateEl) return;
+
+    var formatted = formatEditionDate(dateString);
+    if (formatted) {
+      dateEl.textContent = formatted;
+      dateEl.setAttribute('datetime', dateString);
+    }
+  }
+
+  /* ============================================
+     EDITION RENDERER
+     ============================================ */
+  function renderEdition(data) {
+    if (!data) return;
+
+    editionData = data;
+    insertEditionDate(data.edition_date);
+
+    renderLeadStory(data.lead_story);
+    renderSecondaryStories(data.secondary_stories);
+    renderMythColumn(data.myth);
+    renderWeeklyPractice(data.practice);
+  }
+
+  function renderLeadStory(story) {
+    var container = document.getElementById('lead-story');
+    if (!container || !story) return;
+
+    var html = '';
+
+    if (story.kicker) {
+      html += '<p class="kicker">' + escapeHtml(story.kicker) + '</p>';
+    }
+
+    if (story.headline) {
+      html += '<h2 class="story-headline">' + escapeHtml(story.headline) + '</h2>';
+    }
+
+    if (story.pulled_quote) {
+      html += '<blockquote class="pulled-quote">' + escapeHtml(story.pulled_quote) + '</blockquote>';
+    }
+
+    if (story.body && story.body.length) {
+      story.body.forEach(function(para) {
+        html += '<p>' + escapeHtml(para) + '</p>';
+      });
+    }
+
+    if (story.what_to_do) {
+      html += '<div class="what-to-do">';
+      html += '<p class="what-to-do-label">WHAT TO DO</p>';
+      html += '<p class="what-to-do-text">' + escapeHtml(story.what_to_do) + '</p>';
+      html += '</div>';
+    }
+
+    if (story.sources && story.sources.length) {
+      html += '<ul class="story-sources">';
+      story.sources.forEach(function(source) {
+        html += '<li><a href="' + escapeHtml(source.url) + '" target="_blank" rel="noopener">' + escapeHtml(source.title) + '</a></li>';
+      });
+      html += '</ul>';
+    }
+
+    html += '<p class="story-meta"><a href="#" class="editor-link" data-action="discuss-lead">Ask the editor about this story →</a></p>';
+
+    container.innerHTML = html;
+
+    container.querySelector('.editor-link').addEventListener('click', function(e) {
+      e.preventDefault();
+      setDeskContext(story.headline, 'discuss-lead');
+    });
+  }
+
+  function renderSecondaryStories(stories) {
+    var container = document.getElementById('secondary-stories');
+    if (!container || !stories || !stories.length) return;
+
+    var html = '';
+
+    stories.forEach(function(story, index) {
+      html += '<article class="secondary-story">';
+
+      html += '<div class="secondary-story-header">';
+      if (story.headline) {
+        html += '<h3 class="secondary-story-title">' + escapeHtml(story.headline) + '</h3>';
+      }
+      if (story.severity) {
+        html += '<span class="severity-badge severity-' + story.severity.toLowerCase() + '">' + story.severity + '</span>';
+      }
+      html += '</div>';
+
+      if (story.body) {
+        html += '<p>' + escapeHtml(story.body) + '</p>';
+      }
+
+      if (story.what_to_do) {
+        html += '<div class="what-to-do">';
+        html += '<p class="what-to-do-label">WHAT TO DO</p>';
+        html += '<p class="what-to-do-text">' + escapeHtml(story.what_to_do) + '</p>';
+        html += '</div>';
+      }
+
+      html += '<p class="story-meta"><a href="#" class="editor-link" data-action="secondary-' + index + '">Ask the editor about this story →</a></p>';
+
+      html += '</article>';
+    });
+
+    container.innerHTML = html;
+
+    container.querySelectorAll('.editor-link').forEach(function(link) {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        var action = link.getAttribute('data-action');
+        setDeskContext(null, action);
+      });
+    });
+  }
+
+  function renderMythColumn(myth) {
+    var container = document.getElementById('myth-column');
+    if (!container || !myth) return;
+
+    var html = '';
+
+    if (myth.myth_statement) {
+      html += '<h3 class="myth-statement">' + escapeHtml(myth.myth_statement) + '</h3>';
+    }
+
+    if (myth.verdict) {
+      html += '<p class="myth-verdict">VERDICT: ' + escapeHtml(myth.verdict) + '</p>';
+    }
+
+    if (myth.explanation && myth.explanation.length) {
+      myth.explanation.forEach(function(para) {
+        html += '<p>' + escapeHtml(para) + '</p>';
+      });
+    }
+
+    if (myth.what_to_do) {
+      html += '<div class="what-to-do">';
+      html += '<p class="what-to-do-label">WHAT TO DO</p>';
+      html += '<p class="what-to-do-text">' + escapeHtml(myth.what_to_do) + '</p>';
+      html += '</div>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  function renderWeeklyPractice(practice) {
+    var container = document.getElementById('weekly-practice');
+    if (!container || !practice) return;
+
+    var html = '';
+
+    if (practice.subtitle) {
+      html += '<p class="practice-subtitle">' + escapeHtml(practice.subtitle) + '</p>';
+    }
+
+    if (practice.title) {
+      html += '<h3>' + escapeHtml(practice.title) + '</h3>';
+    }
+
+    if (practice.body && practice.body.length) {
+      practice.body.forEach(function(para) {
+        html += '<p>' + escapeHtml(para) + '</p>';
+      });
+    }
+
+    container.innerHTML = html;
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function showEditionPendingMessage() {
+    var dateEl = document.getElementById('current-date');
+    if (dateEl) {
+      dateEl.textContent = "Today's edition is being prepared.";
+      dateEl.classList.add('edition-pending');
+    }
+  }
+
+  /* ============================================
+     FETCH AND RENDER EDITION
+     ============================================ */
+  function loadEdition() {
+    fetch('data/today.json')
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error('Failed to fetch edition');
+        }
+        return response.json();
+      })
+      .then(function(data) {
+        renderEdition(data);
+      })
+      .catch(function(e) {
+        console.warn('Failed to load edition:', e);
+        showEditionPendingMessage();
+      });
+  }
+
+  /* ============================================
+     FADE-IN ANIMATION
+     ============================================ */
+  function triggerFadeIn() {
+    var fadeElements = document.querySelectorAll('.fade-in');
+    fadeElements.forEach(function(el, index) {
+      setTimeout(function() {
+        el.classList.add('is-visible');
+      }, index * 150);
+    });
+  }
+
+  /* ============================================
+     "FORGET ME" ETHICS FEATURE
+     ============================================ */
+  function initForgetMe() {
+    var forgetLink = document.getElementById('forget-me-link');
+    if (!forgetLink) return;
+
+    forgetLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      var confirmed = confirm('This will clear everything we\'ve discussed and any preferences you\'ve shared. Continue?');
+      if (confirmed) {
+        readerProfile.clear();
+        deskContext.conversation = []; // Clear in-memory conversation
+        alert('Your data has been cleared. Reload for a fresh edition.');
+      }
+    });
+  }
+
+  /* ============================================
+     INITIALISE ON DOM READY
+     ============================================ */
+  document.addEventListener('DOMContentLoaded', function() {
+    triggerFadeIn();
+    EditorDesk.init();
+    initForgetMe();
+    loadEdition();
+    console.log('[Plain Sight] Initialised — update PROXY_URL in main.js to enable Editor\'s Desk');
+  });
+
+  /* ============================================
+     EXPOSE PUBLIC API
+     ============================================ */
+  window.PlainSight = {
+    readerProfile: readerProfile,
+    EditorDesk: EditorDesk,
+    setDeskContext: setDeskContext
+  };
+
+})();

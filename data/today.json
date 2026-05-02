@@ -1,0 +1,63 @@
+{
+  "edition_date": "2026-05-02",
+  "edition_iso": "2026-05-02T06:47:00Z",
+  "region": "United Kingdom",
+  "lead_story": {
+    "headline": "Scammers are now cloning the voices of family members",
+    "kicker": "Today's lead",
+    "pulled_quote": "She thought it was her grandson. It was thirty seconds of his voice scraped from a TikTok, and a stranger reading a script.",
+    "body": [
+      "Across the UK this week, a new kind of phone scam is catching people who thought they were too careful to fall for one. The caller sounds exactly like a family member — a son, a daughter, a grandchild — calling in tears, saying they've been arrested, or in an accident, and need money sent right now.",
+      "It isn't them. It's an AI trained on a thirty-second clip of their voice, scraped from a public social media post. The technology that does this used to cost thousands and require expertise. It now costs nothing and works in under a minute.",
+      "The scam works because urgency overrides judgement. The voice is right. The story is plausible. The pressure is immediate. By the time the family member is actually called to check, the money is gone."
+    ],
+    "what_to_do": "Agree a family code word today. One nonsense word that any caller claiming to be a relative in trouble must say first. If they can't say it, hang up and call them back on their normal number.",
+    "severity": "HIGH",
+    "category": "ai_voice_cloning",
+    "sources": [
+      {"title": "Action Fraud — voice cloning advisory", "url": "https://www.actionfraud.police.uk"},
+      {"title": "NCSC guidance on AI scams", "url": "https://www.ncsc.gov.uk/guidance"}
+    ]
+  },
+  "secondary_stories": [
+    {
+      "headline": "Fake parcel texts now mention your actual postcode",
+      "body": "Royal Mail and DPD impersonation scams have evolved. The latest texts include a real partial postcode for the recipient — bought from breached datasets. The personal detail makes the message feel legitimate. The link still leads to a fake payment page.",
+      "what_to_do": "Never click links in delivery texts. Open the courier's app or website yourself.",
+      "severity": "MEDIUM",
+      "category": "smishing"
+    },
+    {
+      "headline": "A new HMRC tax refund email is fooling careful people",
+      "body": "The latest HMRC scam email gets the branding right, gets the tone right, and asks for nothing on the first click. The first page only asks you to 'verify your details to receive your refund.' The data harvesting starts on page two, after you've already trusted it.",
+      "what_to_do": "HMRC will never email you about a refund. They write letters. Any refund email is a scam.",
+      "severity": "MEDIUM",
+      "category": "phishing"
+    },
+    {
+      "headline": "Your old LinkedIn data is being weaponised against you at work",
+      "body": "Scammers are scraping LinkedIn for job titles and company names, then sending emails to you that look like they come from your boss or a colleague. The grammar is perfect. The signature looks right. The request is small — usually a gift card or a quick favour.",
+      "what_to_do": "If a workplace email feels even slightly off, ring the person directly before doing anything.",
+      "severity": "MEDIUM",
+      "category": "business_impersonation"
+    }
+  ],
+  "myth": {
+    "myth_statement": "If I'd been hacked, I'd know about it.",
+    "verdict": "FALSE",
+    "explanation": [
+      "The opposite is closer to the truth. The most damaging breaches are the ones you don't notice — credentials quietly resold, accounts watched without being touched, identity details stitched together over months from sources you've forgotten about.",
+      "If a hacker wants to use your account, the last thing they want is for you to know. The signs are usually small: a login from an unfamiliar place, a password reset email you didn't ask for, a strange charge for a few pounds. Most people miss them or shrug them off."
+    ],
+    "what_to_do": "Check haveibeenpwned.com for your main email address right now. It takes ten seconds and shows you every known breach your email has appeared in."
+  },
+  "practice": {
+    "title": "How to spot a fake delivery text",
+    "subtitle": "This week's practice",
+    "body": [
+      "A delivery text is the most common scam in the UK because nearly everyone is expecting a parcel from someone. The scam works on probability — send a million texts, a few thousand will land at the moment someone is waiting on something.",
+      "There is exactly one tell that catches almost all of them: real couriers do not ask you to pay a small fee to release a parcel. Not £1.99, not £2.50, not anything. If a text mentions a payment, however small, it is a scam. Every time.",
+      "If you're unsure about a parcel, open the courier's app or go to their website directly. Never tap the link in the text. The link is the trap."
+    ]
+  }
+}

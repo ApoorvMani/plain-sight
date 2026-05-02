@@ -1,0 +1,8 @@
+node_modules/
+.vercel/
+.claude/
+.env
+.env.local
+*.log
+
+.vercel
