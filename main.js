@@ -1342,6 +1342,7 @@
   document.addEventListener('DOMContentLoaded', function() {
     triggerFadeIn();
     EditorDesk.init();
+    RegenerateController.init();
     initForgetMe();
     loadEdition();
     console.log('[Plain Sight] Initialised — update PROXY_URL in main.js to enable Editor\'s Desk');
