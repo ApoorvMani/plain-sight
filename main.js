@@ -1006,6 +1006,287 @@
   }
 
   /* ============================================
+     REGENERATE CONTROLLER
+     ============================================ */
+  var RegenerateController = {
+    _btn: null,
+    _topicInput: null,
+    _ribbon: null,
+    _liveIndicator: null,
+    _isRunning: false,
+    _storyBuffer: [],
+
+    init: function() {
+      this._btn = document.getElementById('regenerate-btn');
+      this._topicInput = document.getElementById('topic-input');
+      this._ribbon = document.getElementById('agent-ribbon');
+      this._liveIndicator = document.getElementById('live-indicator');
+
+      var self = this;
+      if (this._btn) {
+        this._btn.addEventListener('click', function() {
+          if (self._isRunning) return;
+          var topic = self._topicInput ? self._topicInput.value.trim() : '';
+          self._start(topic);
+        });
+      }
+    },
+
+    _start: function(topic) {
+      var self = this;
+      this._isRunning = true;
+      this._storyBuffer = [];
+
+      if (this._btn) this._btn.disabled = true;
+      this._showRibbon();
+      this._setLive(true);
+      this._clearEdition();
+
+      if (topic) {
+        this._showBanner(topic);
+      }
+
+      fetch(API_BASE + '/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ region: 'United Kingdom', topic: topic || undefined })
+      })
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error('Pipeline unavailable (' + response.status + ')');
+        }
+
+        if (response.body && response.body.getReader) {
+          var reader = response.body.getReader();
+          var decoder = new TextDecoder();
+          var buffer = '';
+          var currentEvent = null;
+
+          function pump() {
+            return reader.read().then(function(chunk) {
+              if (chunk.done) {
+                self._onDone();
+                return;
+              }
+              buffer += decoder.decode(chunk.value, { stream: true });
+              var lines = buffer.split('\n');
+              buffer = lines.pop();
+
+              lines.forEach(function(line) {
+                if (line.startsWith('event: ')) {
+                  currentEvent = line.slice(7).trim();
+                } else if (line.startsWith('data: ') && currentEvent) {
+                  try {
+                    var data = JSON.parse(line.slice(6));
+                    self._handleEvent(currentEvent, data);
+                  } catch (e) {}
+                  currentEvent = null;
+                }
+              });
+
+              return pump();
+            });
+          }
+
+          return pump();
+        }
+
+        // Fallback for environments without ReadableStream
+        return response.text().then(function(text) {
+          var lines = text.split('\n');
+          var currentEvent = null;
+          lines.forEach(function(line) {
+            if (line.startsWith('event: ')) {
+              currentEvent = line.slice(7).trim();
+            } else if (line.startsWith('data: ') && currentEvent) {
+              try {
+                var data = JSON.parse(line.slice(6));
+                self._handleEvent(currentEvent, data);
+              } catch (e) {}
+              currentEvent = null;
+            }
+          });
+          self._onDone();
+        });
+      })
+      .catch(function(e) {
+        console.error('[RegenerateController] fetch error:', e);
+        var slot = document.getElementById('lead-story');
+        if (slot) {
+          slot.innerHTML = '<p class="placeholder-text">Something went wrong. Try again?</p>';
+        }
+        self._onDone();
+      });
+    },
+
+    _handleEvent: function(eventName, data) {
+      switch (eventName) {
+        case 'agent_start':
+          this._setAgentActive(data.agent);
+          break;
+        case 'agent_complete':
+          this._setAgentDone(data.agent);
+          break;
+        case 'agent_progress':
+          this._onStoryProgress(data);
+          break;
+        case 'edition_ready':
+          this._onEditionReady(data.edition);
+          break;
+        case 'error':
+          var slot = document.getElementById('lead-story');
+          if (slot) {
+            slot.innerHTML = '<p class="placeholder-text">' +
+              escapeHtml(data.message || 'Pipeline error. Try again?') + '</p>';
+          }
+          this._onDone();
+          break;
+      }
+    },
+
+    _onStoryProgress: function(data) {
+      var story = data.output;
+      var idx = data.story_index;
+
+      if (idx === 0) {
+        renderLeadStory(story);
+        if (editionData) editionData.lead_story = story;
+        this._typewriterLead();
+      } else {
+        this._storyBuffer.push(story);
+        renderSecondaryStories(this._storyBuffer);
+        if (editionData) editionData.secondary_stories = this._storyBuffer.slice();
+      }
+    },
+
+    _typewriterLead: function() {
+      var self = this;
+      var container = document.getElementById('lead-story');
+      if (!container) return;
+
+      var headline = container.querySelector('.story-headline');
+      if (!headline) return;
+
+      // Capture and blank the headline, then type it in
+      var headlineText = headline.textContent;
+      headline.textContent = '';
+
+      self._typewriter(headline, headlineText, 20, function() {
+        // Capture and blank all classless body paragraphs, then chain typewriter
+        var bodyParas = Array.prototype.slice.call(
+          container.querySelectorAll('p:not([class])')
+        );
+        var texts = bodyParas.map(function(p) {
+          var t = p.textContent;
+          p.textContent = '';
+          return t;
+        });
+
+        function chainParas(index) {
+          if (index >= bodyParas.length) return;
+          self._typewriter(bodyParas[index], texts[index], 35, function() {
+            chainParas(index + 1);
+          });
+        }
+        chainParas(0);
+      });
+    },
+
+    _typewriter: function(el, text, wps, onDone) {
+      var words = text.split(' ');
+      var i = 0;
+      el.textContent = '';
+      var base = 1000 / wps;
+      (function tick() {
+        if (i >= words.length) {
+          if (onDone) onDone();
+          return;
+        }
+        el.textContent += (i > 0 ? ' ' : '') + words[i++];
+        setTimeout(tick, base + (Math.random() * 10 - 5));
+      })();
+    },
+
+    _onEditionReady: function(edition) {
+      renderMythColumn(edition.myth);
+      renderWeeklyPractice(edition.practice);
+      editionData = edition;
+      this._onDone();
+    },
+
+    _onDone: function() {
+      if (!this._isRunning) return;
+      this._isRunning = false;
+      this._setLive(false);
+      if (this._btn) this._btn.disabled = false;
+    },
+
+    _clearEdition: function() {
+      var slots = [
+        { id: 'lead-story',        text: 'Writing lead story…' },
+        { id: 'secondary-stories', text: 'Writing secondary stories…' },
+        { id: 'myth-column',       text: 'Writing myth column…' },
+        { id: 'weekly-practice',   text: 'Writing this week’s practice…' }
+      ];
+      slots.forEach(function(s) {
+        var el = document.getElementById(s.id);
+        if (el) el.innerHTML = '<p class="placeholder-text">' + s.text + '</p>';
+      });
+    },
+
+    _showRibbon: function() {
+      if (this._ribbon) {
+        this._ribbon.classList.add('is-visible');
+        this._ribbon.removeAttribute('aria-hidden');
+      }
+    },
+
+    _setLive: function(on) {
+      if (!this._liveIndicator) return;
+      if (on) {
+        this._liveIndicator.classList.add('is-visible');
+      } else {
+        this._liveIndicator.classList.remove('is-visible');
+      }
+    },
+
+    _setAgentActive: function(agentName) {
+      if (!this._ribbon) return;
+      var label = this._ribbon.querySelector('[data-agent="' + agentName + '"]');
+      if (label) {
+        label.classList.remove('is-done');
+        label.classList.add('is-active');
+      }
+    },
+
+    _setAgentDone: function(agentName) {
+      if (!this._ribbon) return;
+      var label = this._ribbon.querySelector('[data-agent="' + agentName + '"]');
+      if (label) {
+        label.classList.remove('is-active');
+        label.classList.add('is-done');
+      }
+    },
+
+    _showBanner: function(topic) {
+      var existing = document.getElementById('special-edition-banner');
+      if (existing) existing.remove();
+
+      var banner = document.createElement('div');
+      banner.className = 'special-edition-banner';
+      banner.id = 'special-edition-banner';
+
+      var strong = document.createElement('strong');
+      strong.textContent = topic;
+      banner.appendChild(document.createTextNode('Special edition on: '));
+      banner.appendChild(strong);
+
+      var main = document.querySelector('main.publication');
+      if (main) main.insertAdjacentElement('beforebegin', banner);
+    }
+  };
+
+  /* ============================================
      FETCH AND RENDER EDITION
      ============================================ */
   function loadEdition() {
