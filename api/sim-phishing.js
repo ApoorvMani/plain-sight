@@ -1,4 +1,4 @@
-import { callClaude, safeJsonParse } from "./agents/_shared.js";
+import { callClaude, safeJsonParse } from "../lib/agents/_shared.js";
 
 export const config = {
   api: {
